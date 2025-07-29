@@ -62,9 +62,9 @@ const Feed = ({
       try {
         let url;
         if (page === "dashboard") {
-          url = `http://localhost:5000/api/myposts/${userId}`;
+          url = `https://space-anon-backend.onrender.com/api/myposts/${userId}`;
         } else {
-          url = "http://localhost:5000/api/posts";
+          url = "https://space-anon-backend.onrender.com/api/posts";
         }
         const response = await fetch(url);
         if (!response.ok) throw new Error("Network response was not ok");
