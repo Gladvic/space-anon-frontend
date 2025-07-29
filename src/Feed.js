@@ -7,8 +7,8 @@ import {
   FaUser,
   FaMoon,
   FaSearch,
-  FaRegBookmark,
-  FaBookmark, // <-- Add this import
+  //FaRegBookmark,
+  //FaBookmark, // <-- Add this import
   FaBell
 } from "react-icons/fa";
 import axios from "axios";
@@ -52,7 +52,7 @@ const Feed = ({
   const [showComments, setShowComments] = useState({}); // postId -> boolean
   const [replyBox, setReplyBox] = useState({}); // commentId -> boolean
   // Add state for comment pagination
-  const [commentPagination, setCommentPagination] = useState({}); // postId -> {limit, offset, hasMore}
+ // const [commentPagination, setCommentPagination] = useState({}); // postId -> {limit, offset, hasMore}
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
