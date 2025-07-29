@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import './App.css';
 import './styles.css';
-import WelcomePage from './Welcomepage';
+import Welcomepage from './Welcomepage';
 import CommunityCode from './community-code';
 import Feed from './Feed';
 import PostDetails from './PostDetails';
