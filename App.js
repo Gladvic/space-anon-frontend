@@ -21,7 +21,7 @@ function App() {
   return (
     <div>
       <Routes>
-        <Route path="/" element={<WelcomePage />} />
+        <Route path="/" element={<Welcomepage />} />
         <Route path="/community-code" element={<CommunityCode />} />
         <Route
           path="/feed"
