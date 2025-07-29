@@ -45,7 +45,7 @@ const Feed = ({
   // Add missing state for delete modal and related results
   const [showDeleteWarning, setShowDeleteWarning] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
-  const [relatedResults, setRelatedResults] = useState([]);
+  // const [relatedResults, setRelatedResults] = useState([]);
   // State for comments
   const [comments, setComments] = useState({}); // postId -> nested array of comments
   const [newComment, setNewComment] = useState({}); // postId or commentId -> comment content
@@ -241,7 +241,7 @@ const Feed = ({
   };
 
   // Bookmark logic
-  const handleBookmark = (post) => {
+  // const handleBookmark = (post) => {
     const id = post.id ?? post._id;
     if (!id) return;
     // Avoid duplicates by id
@@ -328,7 +328,7 @@ const Feed = ({
   };
 
   // Load more comments for a post
-  const loadMoreComments = async (postId) => {
+  // const loadMoreComments = async (postId) => {
     try {
       await fetchComments(postId); // Refresh comments for real-time update
     } catch (error) {
@@ -609,7 +609,7 @@ const Feed = ({
                   const expanded = expandedPosts[id];
                   const content = post.content || "";
                   const likesArr = Array.isArray(post.likes) ? post.likes : [];
-                  const liked = likesArr.includes(userId);
+                //  const liked = likesArr.includes(userId);
                   return (
                     <div
                       className={`post${expanded ? " expanded" : ""}`}
@@ -813,7 +813,7 @@ const Feed = ({
           {postsToShow.length > 0 ? (
             postsToShow.map((post, idx) => {
               const id = post.id ?? post._id ?? idx;
-              const isBookmarked = bookmarkedPosts.some((b) => (b.id ?? b._id) === id);
+            //  const isBookmarked = bookmarkedPosts.some((b) => (b.id ?? b._id) === id);
               const expanded = expandedPosts[id];
               const content = post.content || "";
               // Always show all text if expanded, otherwise clamp to 10 lines
