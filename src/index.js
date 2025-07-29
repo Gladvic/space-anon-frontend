@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom'; // ✅ Required for routing
-import App from './App'; // ✅ Make sure this path is correct!
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+import './index.css'; // if you have a global CSS file
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
