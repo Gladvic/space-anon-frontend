@@ -334,7 +334,7 @@ const Feed = ({
     } catch (error) {
       console.error("Error loading more comments:", error);
     }
-  };
+  
 
   // Like/unlike a comment
   const handleLikeComment = async (commentId, postId) => {
@@ -1150,7 +1150,6 @@ const Feed = ({
         </div>
       </main>
     </div>
-  );
-};
+    ); 
 
 export default Feed;
