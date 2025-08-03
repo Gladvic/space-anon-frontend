@@ -211,6 +211,7 @@ main {
   /* Truncate long content with fade effect */
   display: -webkit-box;
   -webkit-line-clamp: 6;
+  line-clamp: 6;
   -webkit-box-orient: vertical;
   overflow: hidden;
   position: relative;
@@ -219,6 +220,7 @@ main {
 
 .post.expanded p {
   -webkit-line-clamp: unset;
+  line-clamp: 6;
   max-height: none;
   overflow: visible;
 }
