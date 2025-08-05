@@ -45,7 +45,6 @@ const Feed = ({
   // Add missing state for delete modal and related results
   const [showDeleteWarning, setShowDeleteWarning] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
-   const [relatedResults, setRelatedResults] = useState([]);
   // State for comments
   const [comments, setComments] = useState({}); // postId -> nested array of comments
   const [newComment, setNewComment] = useState({}); // postId or commentId -> comment content
