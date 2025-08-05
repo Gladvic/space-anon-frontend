@@ -259,13 +259,13 @@ const Feed = ({
       try {
         const allRes = await fetch("http://localhost:5000/api/posts", { signal: controller.signal });
         const allPosts = await allRes.json();
-        const related = allPosts.filter(
-          (post) =>
-            post.tags &&
-            post.tags.some((tag) =>
-              tag.toLowerCase().includes(searchTag.trim().toLowerCase())
-            )
-        );
+        // const related = allPosts.filter(
+        //  (post) =>
+          //  post.tags &&
+           // post.tags.some((tag) =>
+           //   tag.toLowerCase().includes(searchTag.trim().toLowerCase())
+          //  )
+       //  );
       } catch (e) {
         // Ignore abort errors
       }
