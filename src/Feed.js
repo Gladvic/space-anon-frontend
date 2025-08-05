@@ -1151,5 +1151,6 @@ const Feed = ({
       </main>
     </div>
     ); 
-  };
+  }
+
 export default Feed;
