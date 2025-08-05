@@ -234,7 +234,6 @@ const Feed = ({
             tag.toLowerCase().includes(searchTag.trim().toLowerCase())
           )
       );
-      setRelatedResults(related);
     }
     setSearchLoading(false);
   };
@@ -253,7 +252,6 @@ const Feed = ({
   // Live related results as user types in search bar (debounced)
   useEffect(() => {
     if (!searchTag.trim()) {
-      setRelatedResults([]);
       return;
     }
     const controller = new AbortController();
@@ -268,7 +266,6 @@ const Feed = ({
               tag.toLowerCase().includes(searchTag.trim().toLowerCase())
             )
         );
-        setRelatedResults(related);
       } catch (e) {
         // Ignore abort errors
       }
