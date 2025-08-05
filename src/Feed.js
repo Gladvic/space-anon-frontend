@@ -258,7 +258,7 @@ const Feed = ({
     const timeout = setTimeout(async () => {
       try {
         const allRes = await fetch("http://localhost:5000/api/posts", { signal: controller.signal });
-        const allPosts = await allRes.json();
+       // const allPosts = await allRes.json();
         // const related = allPosts.filter(
         //  (post) =>
           //  post.tags &&
