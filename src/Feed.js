@@ -328,7 +328,7 @@ const Feed = ({
   };
 
   // Load more comments for a post
-  // const loadMoreComments = async (postId) => {
+  const loadMoreComments = async (postId) => {
     try {
       await fetchComments(postId); // Refresh comments for real-time update
     } catch (error) {
