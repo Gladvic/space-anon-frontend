@@ -227,13 +227,13 @@ const Feed = ({
     setSearchResults(merged);
     // Related: partial tag match if no results
     if (merged.length === 0) {
-      const related = allPosts.filter(
-        (post) =>
-          post.tags &&
-          post.tags.some((tag) =>
-            tag.toLowerCase().includes(searchTag.trim().toLowerCase())
-          )
-      );
+     // const related = allPosts.filter(
+       // (post) =>
+         // post.tags &&
+          // post.tags.some((tag) =>
+            // tag.toLowerCase().includes(searchTag.trim().toLowerCase())
+        //  )
+     // );
     }
     setSearchLoading(false);
   };
