@@ -38,7 +38,6 @@ const Feed = ({
   const [searchTag, setSearchTag] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [relatedResults, setRelatedResults] = useState([]); // <-- add this line
   const userId = getUserId();
 
   // Add state for expanded posts
@@ -587,7 +586,6 @@ const Feed = ({
                   const id = post.id ?? post._id ?? idx;
                   const expanded = expandedPosts[id];
                   const content = post.content || "";
-                  const likesArr = Array.isArray(post.likes) ? post.likes : [];
                 //  const liked = likesArr.includes(userId);
                   return (
                     <div
