@@ -38,6 +38,7 @@ const Feed = ({
   const [searchTag, setSearchTag] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
+const [relatedResults, setRelatedResults] = useState([]); // <-- add this line
   const userId = getUserId();
 
   // Add state for expanded posts
