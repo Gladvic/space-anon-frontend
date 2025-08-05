@@ -241,7 +241,7 @@ const Feed = ({
   };
 
   // Bookmark logic
-  // const handleBookmark = (post) => {
+   const handleBookmark = (post) => {
     const id = post.id ?? post._id;
     if (!id) return;
     // Avoid duplicates by id
