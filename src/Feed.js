@@ -38,7 +38,6 @@ const Feed = ({
   const [searchTag, setSearchTag] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
-const [relatedResults, setRelatedResults] = useState([]); // <-- add this line
   const userId = getUserId();
 
   // Add state for expanded posts
@@ -241,22 +240,7 @@ const [relatedResults, setRelatedResults] = useState([]); // <-- add this line
     setSearchLoading(false);
   };
 
-  // Bookmark logic
-   const handleBookmark = (post) => {
-    const id = post.id ?? post._id;
-    if (!id) return;
-    // Avoid duplicates by id
-    if (bookmarkedPosts.some((b) => (b.id ?? b._id) === id)) {
-      setBookmarkedPosts((prev) => prev.filter((b) => (b.id ?? b._id) !== id));
-    } else {
-      setBookmarkedPosts((prev) => {
-        // Avoid duplicates if post already exists
-        if (prev.some((b) => (b.id ?? b._id) === id)) return prev;
-        return [...prev, post];
-      });
-    }
-  };
-
+ 
   // Show a warning if required props are not provided
   useEffect(() => {
     if (typeof setPosts !== "function" || typeof setPage !== "function") {
@@ -329,14 +313,7 @@ const [relatedResults, setRelatedResults] = useState([]); // <-- add this line
   };
 
   // Load more comments for a post
-  const loadMoreComments = async (postId) => {
-    try {
-      await fetchComments(postId); // Refresh comments for real-time update
-    } catch (error) {
-      console.error("Error loading more comments:", error);
-    }
-  };
-
+  
   // Like/unlike a comment
   const handleLikeComment = async (commentId, postId) => {
     try {
