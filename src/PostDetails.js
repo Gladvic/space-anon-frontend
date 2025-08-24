@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { supabase } from "./supabaseClient"
 import { FaTimes } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./PostDetails.css";

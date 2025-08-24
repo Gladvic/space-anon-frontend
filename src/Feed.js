@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { supabase } from "./supabaseClient";
 import "./Feed.css";
 import {
   FaHeart,
@@ -11,7 +12,6 @@ import {
   //FaBookmark, // <-- Add this import
   FaBell
 } from "react-icons/fa";
-import axios from "axios";
 
 // Generate or get user ID
 function getUserId() {
@@ -59,15 +59,23 @@ const Feed = ({
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        let url;
+        let data;
         if (page === "dashboard") {
-          url = `https://space-anon-backend.onrender.com/api/myposts/${userId}`;
+          const { data: myPosts, error } = await supabase
+            .from("posts")
+            .select("*")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false });
+          if (error) throw error;
+          data = myPosts;
         } else {
-          url = "https://space-anon-backend.onrender.com/api/posts";
+          const { data: allPosts, error } = await supabase
+            .from("posts")
+            .select("*")
+            .order("created_at", { ascending: false });
+          if (error) throw error;
+          data = allPosts;
         }
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("Network response was not ok");
-        const data = await response.json();
         setPosts(data || []);
       } catch (err) {
         setPosts([]);
@@ -75,42 +83,7 @@ const Feed = ({
       }
     };
     fetchPosts();
-    // Add setPosts to dependency array to satisfy eslint
   }, [page, userId, setPosts]);
-
-  // Defensive: ensure posts and bookmarkedPosts are always arrays
-  const safePosts = Array.isArray(posts) ? posts : [];
-  const safeBookmarkedPosts = Array.isArray(bookmarkedPosts) ? bookmarkedPosts : [];
-
-  // Ensure every post has a unique 'id' property
-  const normalizedPosts = safePosts.map((post, idx) => ({
-    ...post,
-    id: post.id ?? post._id ?? idx,
-  }));
-
-  // Helper to get the correct posts for the current page
-  const getPostsToShow = () => {
-    if (page === "dashboard") {
-      // Only show posts created by the current user
-      return normalizedPosts.filter(
-        (post) =>
-          post.user_id === userId ||
-          post.userId === userId ||
-          (post.user && (post.user === userId || post.user._id === userId))
-      );
-    }
-    if (page === "bookmarks") {
-      // Only show bookmarked posts that still exist in all posts
-      return safeBookmarkedPosts.filter(
-        (b) =>
-          normalizedPosts.some((p) => (p.id ?? p._id) === (b.id ?? b._id))
-      );
-    }
-    // Default to "home" or any other value: show all posts
-    return normalizedPosts;
-  };
-
-  const postsToShow = getPostsToShow();
 
   const handlePostSubmit = async () => {
     if (!newPost.title.trim() || !newPost.content.trim()) {
@@ -124,19 +97,15 @@ const Feed = ({
       .filter((t) => t.length > 0);
 
     try {
-      const response = await fetch("http://localhost:5000/api/post", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...newPost, user_id: userId, tags: tagsArray }),
-      });
-      if (!response.ok) {
-        const errMsg = await response.text();
-        setError("Failed to add post: " + errMsg);
+      const { data, error } = await supabase
+        .from("posts")
+        .insert([{ ...newPost, user_id: userId, tags: tagsArray }])
+        .select();
+      if (error) {
+        setError("Failed to add post: " + error.message);
         return;
       }
-      const addedPost = await response.json();
-
-      // Always add the new post to the posts list so it appears immediately
+      const addedPost = data[0];
       setPosts((prev) => [addedPost, ...prev]);
       setNewPost({ title: "", content: "", tags: "" });
       setShowAddPostModal(false);
@@ -146,27 +115,38 @@ const Feed = ({
     }
   };
 
-  // Like logic: toggle like for this user (by userId) and update backend
   const handleLikePost = async (postId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/posts/${postId}/like`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
-      });
-      if (response.ok) {
-        const updatedPost = await response.json();
-        setPosts((prevPosts) =>
-          prevPosts.map((post) =>
-            (post.id ?? post._id) === (updatedPost.id ?? updatedPost._id) ? updatedPost : post
-          )
-        );
-        setSearchResults((prevResults) =>
-          prevResults.map((post) =>
-            (post.id ?? post._id) === (updatedPost.id ?? updatedPost._id) ? updatedPost : post
-          )
-        );
-      }
+      // Fetch the post first
+      const { data: postData, error: fetchError } = await supabase
+        .from("posts")
+        .select("likes")
+        .eq("id", postId)
+        .single();
+      if (fetchError) throw fetchError;
+
+      let likes = postData.likes || [];
+      const liked = likes.includes(userId);
+      likes = liked ? likes.filter((id) => id !== userId) : [...likes, userId];
+
+      const { data: updatedData, error: updateError } = await supabase
+        .from("posts")
+        .update({ likes })
+        .eq("id", postId)
+        .select();
+      if (updateError) throw updateError;
+
+      const updatedPost = updatedData[0];
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          (post.id ?? post._id) === (updatedPost.id ?? updatedPost._id) ? updatedPost : post
+        )
+      );
+      setSearchResults((prevResults) =>
+        prevResults.map((post) =>
+          (post.id ?? post._id) === (updatedPost.id ?? updatedPost._id) ? updatedPost : post
+        )
+      );
     } catch (error) {
       console.error("Error liking post:", error);
     }
@@ -177,10 +157,9 @@ const Feed = ({
     setShowDeleteWarning(true);
   };
 
-  // Delete logic: update backend and remove from UI
   const handleConfirmDelete = async () => {
     try {
-      await fetch(`http://localhost:5000/api/post/${deleteId}`, { method: "DELETE" });
+      await supabase.from("posts").delete().eq("id", deleteId);
     } catch (e) {
       // Ignore error, still remove from UI
     }
@@ -210,20 +189,33 @@ const Feed = ({
     setSearchLoading(true);
     setSearchResults([]);
     // Search by tag
-    const tagRes = await fetch(`http://localhost:5000/api/posts/tag/${encodeURIComponent(searchTag.trim())}`);
-    const tagData = await tagRes.json();
-    // Search all posts for title/content match
-    const allRes = await fetch("http://localhost:5000/api/posts");
-    const allPosts = await allRes.json();
-    const textMatches = allPosts.filter(
-      (post) =>
-        post.title.toLowerCase().includes(searchTag.trim().toLowerCase()) ||
-        post.content.toLowerCase().includes(searchTag.trim().toLowerCase())
-    );
-    // Merge and deduplicate results
-    const merged = [...tagData, ...textMatches.filter(
-      (post) => !tagData.some((t) => t.id === post.id)
-    )];
+   const { data: allPosts, error } = await supabase
+  .from("posts")
+  .select("*");
+if (error) {
+    setError("Failed to fetch post: " + error.message);
+    return;  // Stop further execution if there is an error
+  }
+
+  // If no error, proceed with your logic using `data`
+  console.log("Fetched post data:", allPosts);
+  
+const tagData = allPosts.filter((post) =>
+  post.tags?.some(tag =>
+    tag.toLowerCase().includes(searchTag.trim().toLowerCase())
+  )
+);
+
+const textMatches = allPosts.filter(
+  (post) =>
+    post.title.toLowerCase().includes(searchTag.trim().toLowerCase()) ||
+    post.content.toLowerCase().includes(searchTag.trim().toLowerCase())
+);
+
+const merged = [...tagData, ...textMatches.filter(
+  (post) => !tagData.some((t) => t.id === post.id)
+)];
+  
     setSearchResults(merged);
     // Related: partial tag match if no results
     if (merged.length === 0) {
@@ -300,8 +292,18 @@ const Feed = ({
   // Fetch paginated comments for a post
   const fetchComments = async (postId) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/comments/${postId}`);
-      const data = response.data || [];
+      const { data, error } = await supabase
+  .from("comments")
+  .select("*")
+  .eq("postid", postId)
+  .order("created_at", { ascending: true });
+
+if (error) {
+  console.error("Error fetching comments:", error);
+  return;
+}
+setComments((prev) => ({ ...prev, [postId]: data }));
+
       setComments((prev) => ({ ...prev, [postId]: data }));
     } catch (error) {
       console.error("Error fetching comments:", error);
@@ -313,14 +315,24 @@ const Feed = ({
   // Like/unlike a comment
   const handleLikeComment = async (commentId, postId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/comments/${commentId}/like`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
-      });
-      if (response.ok) {
-        fetchComments(postId); // Refresh comments for real-time update
-      }
+      const { data, error } = await supabase
+  .from("comments")
+  .select("likes")
+  .eq("id", commentId)
+  .single();
+
+if (!error) {
+  let likes = data.likes || [];
+  const liked = likes.includes(userId);
+  likes = liked ? likes.filter(id => id !== userId) : [...likes, userId];
+
+  await supabase
+    .from("comments")
+    .update({ likes })
+    .eq("id", commentId);
+  
+  fetchComments(postId); // Refresh
+}
     } catch (error) {
       console.error("Error liking comment:", error);
     }
@@ -335,7 +347,10 @@ const Feed = ({
   // Delete a comment or reply (and its children)
   const handleDeleteComment = async (commentId, postId) => {
     try {
-      await axios.delete(`http://localhost:5000/api/comments/${commentId}`);
+await supabase
+  .from("comments")
+  .delete()
+  .eq("id", commentId);
       // Wait a moment to ensure backend deletes all children before refetching
       setTimeout(() => fetchComments(postId), 200);
     } catch (error) {
@@ -452,12 +467,15 @@ const Feed = ({
     const content = newComment[key];
     if (!content?.trim()) return;
     try {
-      await axios.post("http://localhost:5000/api/comments", {
-        postid: postId,
-        userid: userId,
-        content,
-        parent_id: parentId,
-      });
+      await supabase.from("comments").insert([
+  {
+    postid: postId,
+    userid: userId,
+    content: content,
+    parent_id: parentId,
+  },
+]);
+
       setNewComment((prev) => ({ ...prev, [key]: "" }));
       setReplyBox((prev) => ({ ...prev, [parentId]: false }));
       fetchComments(postId); // Refresh comments for real-time update
@@ -471,12 +489,15 @@ const Feed = ({
     let interval;
     const fetchNotifications = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/notifications/${userId}`);
-        if (res.ok) {
-          const data = await res.json();
-          setNotifications(data);
-          setUnreadCount(data.length); // Simple: all are unread (for demo)
-        }
+const { data, error } = await supabase
+  .from("notifications")
+  .select("*")
+  .eq("user_id", userId); // replace `user_id` with your column name
+
+if (!error) {
+  setNotifications(data);
+  setUnreadCount(data.length); // adjust if you track read/unread
+}
       } catch (e) {
         // ignore
       }
@@ -783,8 +804,8 @@ const Feed = ({
             margin: "0 auto",
           }}
         >
-          {postsToShow.length > 0 ? (
-            postsToShow.map((post, idx) => {
+           {posts.length > 0 ? (
+            posts.map((post, idx) => {
               const id = post.id ?? post._id ?? idx;
             //  const isBookmarked = bookmarkedPosts.some((b) => (b.id ?? b._id) === id);
               const expanded = expandedPosts[id];
