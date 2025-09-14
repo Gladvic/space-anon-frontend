@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient";
 import "./Feed.css";
+import Donation from "./Donation";
+
 import {
   FaHeart,
   FaTrash,
@@ -14,14 +16,48 @@ import {
 } from "react-icons/fa";
 
 // Generate or get user ID
-function getUserId() {
+
+async function getUserId() {
   let userId = localStorage.getItem("spaceanon_user_id");
   if (!userId) {
-    userId = Math.random().toString(36).substr(2, 12) + Date.now();
+    const { data: { user } } = await supabase.auth.getUser();
+    userId = user?.id || crypto.randomUUID(); // fallback guest ID
     localStorage.setItem("spaceanon_user_id", userId);
   }
   return userId;
 }
+
+const ReportButton = ({ onClick }) => (
+  <button
+    className="report-btn"
+    onClick={onClick}
+    style={{
+      background: "#181C3A", // dark navy
+      color: "#C4C4C4",      // muted gray
+      border: "none",
+      borderRadius: "8px",
+      boxShadow: "0 2px 8px rgba(163,98,234,0.12)", // soft violet shadow
+      padding: "8px 18px",
+      fontWeight: 500,
+      fontSize: "1rem",
+      cursor: "pointer",
+      transition: "background 0.2s, color 0.2s, box-shadow 0.2s",
+      marginLeft: "8px"
+    }}
+    onMouseOver={e => {
+      e.currentTarget.style.background = "#A362EA"; // soft violet
+      e.currentTarget.style.color = "#fff";
+      e.currentTarget.style.boxShadow = "0 4px 16px rgba(163,98,234,0.18)";
+    }}
+    onMouseOut={e => {
+      e.currentTarget.style.background = "#181C3A";
+      e.currentTarget.style.color = "#C4C4C4";
+      e.currentTarget.style.boxShadow = "0 2px 8px rgba(163,98,234,0.12)";
+    }}
+  >
+    Report
+  </button>
+);
 
 const Feed = ({
   posts = [],
@@ -31,6 +67,8 @@ const Feed = ({
   bookmarkedPosts = [],
   setBookmarkedPosts = () => {},
 }) => {
+  const [userId, setUserId] = useState(null);  // <-- store resolved userId
+  const [isAdmin, setIsAdmin] = useState(false); // <-- admin check
   const [newPost, setNewPost] = useState({ title: "", content: "", tags: "" });
   const [error, setError] = useState("");
   const [showAddPostModal, setShowAddPostModal] = useState(false);
@@ -38,52 +76,61 @@ const Feed = ({
   const [searchTag, setSearchTag] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const userId = getUserId();
 
-  // Add state for expanded posts
-  const [expandedPosts, setExpandedPosts] = useState({});
-  // Add missing state for delete modal and related results
-  const [showDeleteWarning, setShowDeleteWarning] = useState(false);
-  const [deleteId, setDeleteId] = useState(null);
-  // State for comments
-  const [comments, setComments] = useState({}); // postId -> nested array of comments
-  const [newComment, setNewComment] = useState({}); // postId or commentId -> comment content
-  const [showComments, setShowComments] = useState({}); // postId -> boolean
-  const [replyBox, setReplyBox] = useState({}); // commentId -> boolean
-  // Add state for comment pagination
- // const [commentPagination, setCommentPagination] = useState({}); // postId -> {limit, offset, hasMore}
-  const [notifications, setNotifications] = useState([]);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const ADMIN_ID = "your_admin_user_id_here"; // <-- replace with your admin ID
 
+
+
+  // Fetch posts whenever page changes or userId is ready
   useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        let data;
-        if (page === "dashboard") {
-          const { data: myPosts, error } = await supabase
-            .from("posts")
-            .select("*")
-            .eq("user_id", userId)
-            .order("created_at", { ascending: false });
-          if (error) throw error;
-          data = myPosts;
-        } else {
-          const { data: allPosts, error } = await supabase
-            .from("posts")
-            .select("*")
-            .order("created_at", { ascending: false });
-          if (error) throw error;
-          data = allPosts;
-        }
-        setPosts(data || []);
-      } catch (err) {
-        setPosts([]);
-        console.error("Failed to fetch posts:", err);
+  const fetchPosts = async () => {
+    if (!userId) return; // wait for userId
+
+    try {
+      let data;
+      if (page === "dashboard") {
+        const { data: myPosts, error } = await supabase
+          .from("posts")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        data = myPosts;
+
+      } else if (page === "admin" && isAdmin) {
+        const { data: reported } = await supabase.from("moderation").select("post_id");
+        const reportedPostIds = reported.map(r => r.post_id);
+        const { data: reportedPosts } = await supabase
+          .from("posts")
+          .select("*")
+          .in("id", reportedPostIds)
+          .order("created_at", { ascending: false });
+        data = reportedPosts;
+
+      } else {
+        const { data: reported } = await supabase
+          .from("moderation")
+          .select("post_id")
+          .eq("user_id", userId);
+        const reportedPostIds = reported.map(r => r.post_id);
+        const { data: allPosts } = await supabase
+          .from("posts")
+          .select("*")
+          .not("id", "in", reportedPostIds.length ? reportedPostIds : [null])
+          .order("created_at", { ascending: false });
+        data = allPosts;
       }
-    };
-    fetchPosts();
-  }, [page, userId, setPosts]);
+
+      setPosts(data || []);
+    } catch (err) {
+      setPosts([]);
+      console.error("Failed to fetch posts:", err);
+    }
+  };
+
+  fetchPosts();
+}, [page, userId, isAdmin, setPosts]);
+
 
   const handlePostSubmit = async () => {
     if (!newPost.title.trim() || !newPost.content.trim()) {
@@ -91,12 +138,55 @@ const Feed = ({
       return;
     }
     setError("");
+
+     // 🔒 SPAM BLOCK: enforce minimum words
+    const wordCount = newPost.content.trim().split(/\s+/).length;
+    if (wordCount < 5) {
+      setError("Your post must be at least 5 words long.");
+      return;
+    }
+
+    // 🔒 SPAM BLOCK: cooldown (30s)
+    try {
+      const { data: recentPosts, error: recentError } = await supabase
+        .from("posts")
+        .select("created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (recentError) throw recentError;
+
+      if (recentPosts.length > 0) {
+        const lastPostTime = new Date(recentPosts[0].created_at);
+        const now = new Date();
+        const secondsSinceLastPost = (now - lastPostTime) / 1000;
+
+        if (secondsSinceLastPost < 30) {
+          setError(`You're posting too fast! Wait ${Math.ceil(30 - secondsSinceLastPost)}s.`);
+          return;
+        }
+      }
+
+      // 🔎 AUTOMATIC MODERATION (banned words)
+      const bannedWords = ["spamword1", "offensiveword2"];
+      const containsBanned = bannedWords.some((w) =>
+        newPost.content.toLowerCase().includes(w)
+      );
+
+      if (containsBanned) {
+        await supabase.from("moderation").insert([
+          { post_id: null, user_id: userId, reason: "Auto-flagged for banned content" }
+        ]);
+        setError("Your post was flagged for review.");
+        return;
+      }
+
     const tagsArray = newPost.tags
       .split(",")
       .map((t) => t.trim())
       .filter((t) => t.length > 0);
 
-    try {
       const { data, error } = await supabase
         .from("posts")
         .insert([{ ...newPost, user_id: userId, tags: tagsArray }])
@@ -114,7 +204,6 @@ const Feed = ({
       console.error("Error adding post:", error);
     }
   };
-
   const handleLikePost = async (postId) => {
     try {
       // Fetch the post first
@@ -152,6 +241,17 @@ const Feed = ({
     }
   };
 
+  const reportPost = async (postId) => {
+  try {
+    await supabase.from("moderation").insert([
+      { post_id: postId, user_id: userId }
+    ]);
+    // Refresh posts after reporting
+    fetchPosts();
+  } catch (error) {
+    console.error("Error reporting post:", error);
+  }
+};
   const handleDeleteClick = (postId) => {
     setDeleteId(postId);
     setShowDeleteWarning(true);
@@ -304,7 +404,6 @@ if (error) {
 }
 setComments((prev) => ({ ...prev, [postId]: data }));
 
-      setComments((prev) => ({ ...prev, [postId]: data }));
     } catch (error) {
       console.error("Error fetching comments:", error);
     }
@@ -564,7 +663,11 @@ if (!error) {
       </aside>
       <main className="dashboard-main">
         {/* Always visible search bar at the top of main content, on home and my posts */}
+        <Donation />
+
+ 
         {(page === "home" || page === "dashboard") && (
+         
           <form className="dashboard-main-search-bar sticky-search-bar" onSubmit={handleCombinedSearch}>
             <FaSearch className="search-icon-btn" />
             <input
@@ -578,9 +681,27 @@ if (!error) {
             <button type="submit" className="tag-search-btn">Search</button>
           </form>
         )}
+        
         <button className="add-post-btn" onClick={() => setShowAddPostModal(true)}>
           Add Post
         </button>
+
+        <button className="add-post-btn" onClick={() => setShowAddPostModal(true)}>
+  Add Post
+</button>
+
+{/* Admin Toggle Button */}
+{user?.id === ADMIN_ID && (
+  <button
+    className="admin-toggle-btn"
+    onClick={() => setIsAdminView(!isAdminView)}
+    style={{ marginBottom: "10px" }}
+  >
+    {isAdminView ? "Switch to User View" : "Switch to Admin View"}
+  </button>
+)}
+
+
         {/* Tag & post search results */}
         {searchTag.trim() && (
           <div
@@ -882,6 +1003,17 @@ if (!error) {
                         {Array.isArray(post.likes) ? post.likes.length : 0}
                       </span>
                     </button>
+                     {/* Report button (only show in normal feed) */}
+  {page !== "admin" && (
+    <button
+      className="post-report-btn"
+      onClick={() => reportPost(id)}
+      aria-label="Report post"
+    >
+      🚩 Report
+    </button>
+  )}
+
                     <button
                       className="post-delete-btn"
                       onClick={() => handleDeleteClick(id)}
