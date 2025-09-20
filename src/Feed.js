@@ -12,10 +12,16 @@ import {
   FaSearch,
   //FaRegBookmark,
   //FaBookmark, // <-- Add this import
-  FaBell
+
 } from "react-icons/fa";
 
 // Generate or get user ID
+
+const handleToggleAdmin = () => {
+  if (!isAdmin) return; // only allow real admins
+  setIsAdminView((prev) => !prev);
+};
+
 
 async function getUserId() {
   let userId = localStorage.getItem("spaceanon_user_id");
@@ -26,6 +32,14 @@ async function getUserId() {
   }
   return userId;
 }
+
+useEffect(() => {
+  (async () => {
+    const id = await getUserId();
+    setUserId(id);
+    if (id === ADMIN_ID) setIsAdmin(true);
+  })();
+}, []);
 
 const ReportButton = ({ onClick }) => (
   <button
@@ -67,23 +81,35 @@ const Feed = ({
   bookmarkedPosts = [],
   setBookmarkedPosts = () => {},
 }) => {
-  const [userId, setUserId] = useState(null);  // <-- store resolved userId
-  const [isAdmin, setIsAdmin] = useState(false); // <-- admin check
-  const [newPost, setNewPost] = useState({ title: "", content: "", tags: "" });
-  const [error, setError] = useState("");
-  const [showAddPostModal, setShowAddPostModal] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [searchTag, setSearchTag] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [searchLoading, setSearchLoading] = useState(false);
+  // user and id
+const [user, setUser] = useState(null);
+// admin toggle
 
-  const ADMIN_ID = "your_admin_user_id_here"; // <-- replace with your admin ID
+// comments
+  const ADMIN_ID = "ec9194db-0ea4-4c9a-b487-784e9159ec8a"; // <-- replace with your admin ID
+const [userId, setUserId] = useState(null);
+const [isAdmin, setIsAdmin] = useState(false);
+const [isAdminView, setIsAdminView] = useState(false); // for toggling view
+const [newPost, setNewPost] = useState({ title: "", content: "", tags: "" });
+const [error, setError] = useState("");
+const [showAddPostModal, setShowAddPostModal] = useState(false);
+const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+const [searchTag, setSearchTag] = useState("");
+const [searchResults, setSearchResults] = useState([]);
+const [searchLoading, setSearchLoading] = useState(false);
+const [comments, setComments] = useState({});
+const [showComments, setShowComments] = useState({});
+const [newComment, setNewComment] = useState({});
+const [replyBox, setReplyBox] = useState({});
+const [expandedPosts, setExpandedPosts] = useState({});
+const [notifications, setNotifications] = useState([]);
+const [unreadCount, setUnreadCount] = useState(0);
+const [deleteId, setDeleteId] = useState(null);
+const [showDeleteWarning, setShowDeleteWarning] = useState(false);
 
 
 
-  // Fetch posts whenever page changes or userId is ready
-  useEffect(() => {
-  const fetchPosts = async () => {
+const fetchPosts = async () => {
     if (!userId) return; // wait for userId
 
     try {
@@ -97,7 +123,7 @@ const Feed = ({
         if (error) throw error;
         data = myPosts;
 
-      } else if (page === "admin" && isAdmin) {
+      } else if (page === "admin" && isAdminView) {
         const { data: reported } = await supabase.from("moderation").select("post_id");
         const reportedPostIds = reported.map(r => r.post_id);
         const { data: reportedPosts } = await supabase
@@ -128,9 +154,21 @@ const Feed = ({
     }
   };
 
+  // Fetch posts whenever page changes or userId is ready
+  useEffect(() => {
+  
+
   fetchPosts();
 }, [page, userId, isAdmin, setPosts]);
 
+useEffect(() => {
+  const fetchUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setUser(user);
+    if (user) setUserId(user.id);
+  };
+  fetchUser();
+}, []);
 
   const handlePostSubmit = async () => {
     if (!newPost.title.trim() || !newPost.content.trim()) {
@@ -682,9 +720,6 @@ if (!error) {
           </form>
         )}
         
-        <button className="add-post-btn" onClick={() => setShowAddPostModal(true)}>
-          Add Post
-        </button>
 
         <button className="add-post-btn" onClick={() => setShowAddPostModal(true)}>
   Add Post
@@ -694,13 +729,12 @@ if (!error) {
 {user?.id === ADMIN_ID && (
   <button
     className="admin-toggle-btn"
-    onClick={() => setIsAdminView(!isAdminView)}
+    onClick={handleToggleAdmin}
     style={{ marginBottom: "10px" }}
   >
     {isAdminView ? "Switch to User View" : "Switch to Admin View"}
   </button>
 )}
-
 
         {/* Tag & post search results */}
         {searchTag.trim() && (
@@ -1004,16 +1038,9 @@ if (!error) {
                       </span>
                     </button>
                      {/* Report button (only show in normal feed) */}
-  {page !== "admin" && (
-    <button
-      className="post-report-btn"
-      onClick={() => reportPost(id)}
-      aria-label="Report post"
-    >
-      🚩 Report
-    </button>
+  {!isAdminView && (
+   <ReportButton onClick={() => reportPost(id)} />
   )}
-
                     <button
                       className="post-delete-btn"
                       onClick={() => handleDeleteClick(id)}
@@ -1207,73 +1234,7 @@ if (!error) {
             </div>
           </div>
         )}
-        <div style={{ position: "relative", display: "inline-block", margin: "16px 0 0 16px" }}>
-          <button
-            onClick={() => setShowNotifications((v) => !v)}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              position: "relative",
-              fontSize: "1.6em",
-              color: "#A362EA"
-            }}
-            aria-label="Show notifications"
-          >
-            <FaBell />
-            {unreadCount > 0 && (
-              <span style={{
-                position: "absolute",
-                top: -6,
-                right: -6,
-                background: "#E63946",
-                color: "#fff",
-                borderRadius: "50%",
-                fontSize: "0.8em",
-                padding: "2px 6px",
-                fontWeight: 700,
-                minWidth: 18,
-                textAlign: "center"
-              }}>
-                {unreadCount}
-              </span>
-            )}
-          </button>
-          {showNotifications && (
-            <div style={{
-              position: "absolute",
-              top: 32,
-              left: 0,
-              background: "#23264A",
-              color: "#fff",
-              borderRadius: 8,
-              boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
-              minWidth: 260,
-              zIndex: 100,
-              maxHeight: 320,
-              overflowY: "auto"
-            }}>
-              <div style={{ padding: "10px 16px", borderBottom: "1px solid #444", fontWeight: 600 }}>
-                Notifications
-              </div>
-              {notifications.length === 0 ? (
-                <div style={{ padding: 16, color: "#aaa" }}>No notifications</div>
-              ) : (
-                notifications.map((n) => (
-                  <div key={n.id} style={{ padding: "10px 16px", borderBottom: "1px solid #333" }}>
-                    {n.type === "reply" ? "Someone replied to your comment" : "Someone commented on your post"}
-                    <div style={{ fontSize: "0.95em", color: "#A362EA", marginTop: 2 }}>
-                      Post #{n.post_id} • Comment #{n.comment_id}
-                    </div>
-                    <div style={{ fontSize: "0.8em", color: "#888" }}>
-                      {new Date(n.created_at).toLocaleString()}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
+        
       </main>
     </div>
   ); 
