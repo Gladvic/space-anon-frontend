@@ -17,12 +17,6 @@ import {
 
 // Generate or get user ID
 
-const handleToggleAdmin = () => {
-  if (!isAdmin) return; // only allow real admins
-  setIsAdminView((prev) => !prev);
-};
-
-
 async function getUserId() {
   let userId = localStorage.getItem("spaceanon_user_id");
   if (!userId) {
@@ -81,32 +75,58 @@ const Feed = ({
   bookmarkedPosts = [],
   setBookmarkedPosts = () => {},
 }) => {
-  // user and id
-const [user, setUser] = useState(null);
-// admin toggle
+ const [user, setUser] = useState(null);
+  const [userId, setUserId] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdminView, setIsAdminView] = useState(false);
 
-// comments
-  const ADMIN_ID = "ec9194db-0ea4-4c9a-b487-784e9159ec8a"; // <-- replace with your admin ID
-const [userId, setUserId] = useState(null);
-const [isAdmin, setIsAdmin] = useState(false);
-const [isAdminView, setIsAdminView] = useState(false); // for toggling view
-const [newPost, setNewPost] = useState({ title: "", content: "", tags: "" });
-const [error, setError] = useState("");
-const [showAddPostModal, setShowAddPostModal] = useState(false);
-const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-const [searchTag, setSearchTag] = useState("");
-const [searchResults, setSearchResults] = useState([]);
-const [searchLoading, setSearchLoading] = useState(false);
-const [comments, setComments] = useState({});
-const [showComments, setShowComments] = useState({});
-const [newComment, setNewComment] = useState({});
-const [replyBox, setReplyBox] = useState({});
-const [expandedPosts, setExpandedPosts] = useState({});
-const [notifications, setNotifications] = useState([]);
-const [unreadCount, setUnreadCount] = useState(0);
-const [deleteId, setDeleteId] = useState(null);
-const [showDeleteWarning, setShowDeleteWarning] = useState(false);
+  const [newPost, setNewPost] = useState({ title: "", content: "", tags: "" });
+  const [error, setError] = useState("");
 
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [searchTag, setSearchTag] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  const [comments, setComments] = useState({});
+  const [showComments, setShowComments] = useState({});
+  const [newComment, setNewComment] = useState({});
+  const [replyBox, setReplyBox] = useState({});
+  const [expandedPosts, setExpandedPosts] = useState({});
+  const [deleteId, setDeleteId] = useState(null);
+  const [showDeleteWarning, setShowDeleteWarning] = useState(false);
+
+  // --- CONSTANT ---
+  const ADMIN_ID = "ec9194db-0ea4-4c9a-b487-784e9159ec8a";
+const handleToggleAdmin = () => {
+  if (!isAdmin) return; // only allow real admins
+  setIsAdminView((prev) => !prev);
+};
+
+  useEffect(() => {
+ const fetchUser = async () => {
+   const { data: { user } } = await supabase.auth.getUser();
+   if (user) {
+     setUser(user);
+     setUserId(user.id);
+     if (user.id === ADMIN_ID) setIsAdmin(true);
+   } else {
+     // fallback guest ID
+     let guestId = localStorage.getItem("spaceanon_user_id");
+     if (!guestId) {
+       guestId = crypto.randomUUID();
+       localStorage.setItem("spaceanon_user_id", guestId);
+     }
+     setUserId(guestId);
+   }
+ };
+ fetchUser();
+}, []);
+
+// fetch posts when dependencies change
+useEffect(() => {
+ fetchPosts();
+}, [page, userId, isAdmin]);
 
 
 const fetchPosts = async () => {
@@ -153,22 +173,9 @@ const fetchPosts = async () => {
       console.error("Failed to fetch posts:", err);
     }
   };
+ 
 
-  // Fetch posts whenever page changes or userId is ready
-  useEffect(() => {
-  
 
-  fetchPosts();
-}, [page, userId, isAdmin, setPosts]);
-
-useEffect(() => {
-  const fetchUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
-    if (user) setUserId(user.id);
-  };
-  fetchUser();
-}, []);
 
   const handlePostSubmit = async () => {
     if (!newPost.title.trim() || !newPost.content.trim()) {
