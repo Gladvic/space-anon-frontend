@@ -27,14 +27,6 @@ async function getUserId() {
   return userId;
 }
 
-useEffect(() => {
-  (async () => {
-    const id = await getUserId();
-    setUserId(id);
-    if (id === ADMIN_ID) setIsAdmin(true);
-  })();
-}, []);
-
 const ReportButton = ({ onClick }) => (
   <button
     className="report-btn"
