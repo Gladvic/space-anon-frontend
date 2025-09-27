@@ -17,7 +17,7 @@ import {
 
 // Generate or get user ID
 
-async function getUserId() {
+// async function getUserId() {
   let userId = localStorage.getItem("spaceanon_user_id");
   if (!userId) {
     const { data: { user } } = await supabase.auth.getUser();
@@ -25,7 +25,6 @@ async function getUserId() {
     localStorage.setItem("spaceanon_user_id", userId);
   }
   return userId;
-}
 
 const ReportButton = ({ onClick }) => (
   <button
@@ -68,8 +67,8 @@ const Feed = ({
   setBookmarkedPosts = () => {},
 }) => {
   const [showAddPostModal, setShowAddPostModal] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+ // const [notifications, setNotifications] = useState([]);
+ // const [unreadCount, setUnreadCount] = useState(0);
 
  const [user, setUser] = useState(null);
   const [userId, setUserId] = useState(null);
@@ -122,7 +121,7 @@ const handleToggleAdmin = () => {
 // fetch posts when dependencies change
 useEffect(() => {
  fetchPosts();
-}, [page, userId, isAdmin]);
+}, [page, userId, isAdmin, fetchPosts]);
 
 
 const fetchPosts = async () => {
