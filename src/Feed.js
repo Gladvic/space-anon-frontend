@@ -67,6 +67,10 @@ const Feed = ({
   bookmarkedPosts = [],
   setBookmarkedPosts = () => {},
 }) => {
+  const [showAddPostModal, setShowAddPostModal] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
  const [user, setUser] = useState(null);
   const [userId, setUserId] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
