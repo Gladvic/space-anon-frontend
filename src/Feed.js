@@ -22,7 +22,7 @@ function getUserId() {
   if (!userId) {
   userId = crypto.randomUUID(); // always fallback to random guest ID
     localStorage.setItem("spaceanon_user_id", userId);
-
+  }
   return userId;
 }
 const ReportButton = ({ onClick }) => (
