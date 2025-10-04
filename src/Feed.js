@@ -623,28 +623,7 @@ await supabase
   };
 
   // Poll notifications every 10 seconds
-  useEffect(() => {
-    let interval;
-    const fetchNotifications = async () => {
-      try {
-const { data, error } = await supabase
-  .from("notifications")
-  .select("*")
-  .eq("user_id", userId); // replace `user_id` with your column name
-
-if (!error) {
-  setNotifications(data);
-  setUnreadCount(data.length); // adjust if you track read/unread
-}
-      } catch (e) {
-        // ignore
-      }
-    };
-    fetchNotifications();
-    interval = setInterval(fetchNotifications, 10000);
-    return () => clearInterval(interval);
-  }, [userId]);
-
+ 
   return (
     <div className={`dashboard-container${sidebarCollapsed ? " collapsed" : ""}`}>
       <aside className="dashboard-sidebar">
