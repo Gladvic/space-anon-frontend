@@ -20,9 +20,9 @@ import {
 function getUserId() {
   let userId = localStorage.getItem("spaceanon_user_id");
   if (!userId) {
-    userId = user?.id || crypto.randomUUID(); // fallback guest ID
+  userId = crypto.randomUUID(); // always fallback to random guest ID
     localStorage.setItem("spaceanon_user_id", userId);
-  }
+
   return userId;
 }
 const ReportButton = ({ onClick }) => (
