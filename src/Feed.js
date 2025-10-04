@@ -17,15 +17,14 @@ import {
 
 // Generate or get user ID
 
-// async function getUserId() {
+function getUserId() {
   let userId = localStorage.getItem("spaceanon_user_id");
   if (!userId) {
-    const { data: { user } } = await supabase.auth.getUser();
     userId = user?.id || crypto.randomUUID(); // fallback guest ID
     localStorage.setItem("spaceanon_user_id", userId);
   }
   return userId;
-
+}
 const ReportButton = ({ onClick }) => (
   <button
     className="report-btn"
