@@ -118,12 +118,6 @@ const handleToggleAdmin = () => {
  fetchUser();
 }, []);
 
-// fetch posts when dependencies change
-useEffect(() => {
- fetchPosts();
-}, [page, userId, isAdmin, fetchPosts]);
-
-
 const fetchPosts = async () => {
     if (!userId) return; // wait for userId
 
@@ -168,9 +162,10 @@ const fetchPosts = async () => {
       console.error("Failed to fetch posts:", err);
     }
   };
- 
-
-
+// fetch posts when dependencies change
+useEffect(() => {
+ fetchPosts();
+}, [page, userId, isAdmin, fetchPosts]);
 
   const handlePostSubmit = async () => {
     if (!newPost.title.trim() || !newPost.content.trim()) {
