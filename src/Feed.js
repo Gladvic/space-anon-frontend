@@ -17,14 +17,18 @@ import {
 
 // Generate or get user ID
 
-function getUserId() {
+function getUserId(user) {
   let userId = localStorage.getItem("spaceanon_user_id");
+
   if (!userId) {
-  userId = crypto.randomUUID(); // always fallback to random guest ID
+    // if logged in user exists, use their Supabase ID
+    userId = user?.id || crypto.randomUUID();
     localStorage.setItem("spaceanon_user_id", userId);
   }
+
   return userId;
 }
+
 const ReportButton = ({ onClick }) => (
   <button
     className="report-btn"
@@ -101,18 +105,15 @@ const handleToggleAdmin = () => {
  const fetchUser = async () => {
    const { data: { user } } = await supabase.auth.getUser();
    if (user) {
-     setUser(user);
-     setUserId(user.id);
-     if (user.id === ADMIN_ID) setIsAdmin(true);
-   } else {
-     // fallback guest ID
-     let guestId = localStorage.getItem("spaceanon_user_id");
-     if (!guestId) {
-       guestId = crypto.randomUUID();
-       localStorage.setItem("spaceanon_user_id", guestId);
-     }
-     setUserId(guestId);
-   }
+  setUser(user);
+  const id = getUserId(user);
+  setUserId(id);
+  if (user.id === ADMIN_ID) setIsAdmin(true);
+} else {
+  const id = getUserId(null);
+  setUserId(id);
+}
+
  };
  fetchUser();
 }, []);
