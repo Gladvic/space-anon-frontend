@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./supabaseClient";
 import "./Feed.css";
 import Donation from "./Donation";
@@ -118,54 +118,54 @@ const handleToggleAdmin = () => {
  fetchUser();
 }, []);
 
-const fetchPosts = async () => {
-    if (!userId) return; // wait for userId
+const fetchPosts = useCallback(async () => {
+  if (!userId) return;
 
-    try {
-      let data;
-      if (page === "dashboard") {
-        const { data: myPosts, error } = await supabase
-          .from("posts")
-          .select("*")
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false });
-        if (error) throw error;
-        data = myPosts;
+  try {
+    let data;
+    if (page === "dashboard") {
+      const { data: myPosts, error } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      data = myPosts;
 
-      } else if (page === "admin" && isAdminView) {
-        const { data: reported } = await supabase.from("moderation").select("post_id");
-        const reportedPostIds = reported.map(r => r.post_id);
-        const { data: reportedPosts } = await supabase
-          .from("posts")
-          .select("*")
-          .in("id", reportedPostIds)
-          .order("created_at", { ascending: false });
-        data = reportedPosts;
+    } else if (page === "admin" && isAdminView) {
+      const { data: reported } = await supabase.from("moderation").select("post_id");
+      const reportedPostIds = reported.map((r) => r.post_id);
+      const { data: reportedPosts } = await supabase
+        .from("posts")
+        .select("*")
+        .in("id", reportedPostIds)
+        .order("created_at", { ascending: false });
+      data = reportedPosts;
 
-      } else {
-        const { data: reported } = await supabase
-          .from("moderation")
-          .select("post_id")
-          .eq("user_id", userId);
-        const reportedPostIds = reported.map(r => r.post_id);
-        const { data: allPosts } = await supabase
-          .from("posts")
-          .select("*")
-          .not("id", "in", reportedPostIds.length ? reportedPostIds : [null])
-          .order("created_at", { ascending: false });
-        data = allPosts;
-      }
-
-      setPosts(data || []);
-    } catch (err) {
-      setPosts([]);
-      console.error("Failed to fetch posts:", err);
+    } else {
+      const { data: reported } = await supabase
+        .from("moderation")
+        .select("post_id")
+        .eq("user_id", userId);
+      const reportedPostIds = reported.map((r) => r.post_id);
+      const { data: allPosts } = await supabase
+        .from("posts")
+        .select("*")
+        .not("id", "in", reportedPostIds.length ? reportedPostIds : [null])
+        .order("created_at", { ascending: false });
+      data = allPosts;
     }
-  };
-// fetch posts when dependencies change
+
+    setPosts(data || []);
+  } catch (err) {
+    setPosts([]);
+    console.error("Failed to fetch posts:", err);
+  }
+}, [page, userId, isAdminView, setPosts]);
+
 useEffect(() => {
- fetchPosts();
-}, [page, userId, isAdmin, fetchPosts]);
+  fetchPosts();
+}, [fetchPosts]);
 
   const handlePostSubmit = async () => {
     if (!newPost.title.trim() || !newPost.content.trim()) {
