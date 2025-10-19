@@ -20,7 +20,7 @@ import {
 function getUserId() {
   let userId = localStorage.getItem("spaceanon_user_id");
   if (!userId) {
-    userId = self.crypto.randomUUID(); // generates a valid UUID
+    userId = window.crypto.randomUUID(); // generates a valid UUID
     localStorage.setItem("spaceanon_user_id", userId);
   }
   return userId;
