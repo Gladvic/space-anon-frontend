@@ -675,10 +675,9 @@ await supabase
       </aside>
       <main className="dashboard-main">
         {/* Always visible search bar at the top of main content, on home and my posts */}
-        <div style={{ marginTop: "30px", display: "flex", justifyContent: "center" }}>
-  <Donation />
-</div>
-
+        <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
+       <Donation />
+       </div>
  
         {(page === "home" || page === "dashboard") && (
          
