@@ -3,7 +3,7 @@ import { supabase } from "./supabaseClient";
 import "./Feed.css";
 import Donation from "./Donation";
 
-import {
+import { 
   FaHeart,
   FaTrash,
   FaHome,
@@ -17,17 +17,15 @@ import {
 
 // Generate or get user ID
 
-function getUserId(user) {
+function getUserId() {
   let userId = localStorage.getItem("spaceanon_user_id");
-
   if (!userId) {
-    // if logged in user exists, use their Supabase ID
-    userId = user?.id || crypto.randomUUID();
+    userId = self.crypto.randomUUID(); // generates a valid UUID
     localStorage.setItem("spaceanon_user_id", userId);
   }
-
   return userId;
 }
+
 
 const ReportButton = ({ onClick }) => (
   <button
@@ -677,7 +675,9 @@ await supabase
       </aside>
       <main className="dashboard-main">
         {/* Always visible search bar at the top of main content, on home and my posts */}
-        <Donation />
+        <div style={{ marginTop: "30px", display: "flex", justifyContent: "center" }}>
+  <Donation />
+</div>
 
  
         {(page === "home" || page === "dashboard") && (
