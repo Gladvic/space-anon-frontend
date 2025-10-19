@@ -22,6 +22,12 @@ function Donation() {
         padding: expanded ? "20px" : "10px",
         marginBottom: "15px",
         textAlign: "center",
+        position: "fixed",     
+        top: "10px",            
+        right: "10px",          
+        zIndex: 1000,           
+        transition: "width 0.3s ease",
+        width: expanded ? "300px" : "auto",
       }}
     >
       {!expanded ? (
@@ -80,7 +86,7 @@ function Donation() {
                 marginTop: "10px",
               }}
             >
-              Close ✖
+              Close ❌
             </button>
           </div>
         </>
